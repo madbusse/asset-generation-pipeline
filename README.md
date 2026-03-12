@@ -1,4 +1,4 @@
-### Asset Generation Pipeline
+# Asset Generation Pipeline
 
 The goal of this project is to harness Google Apps Scripts and an Image Generation Model to create variations of an asset.
 
