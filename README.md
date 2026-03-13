@@ -18,3 +18,7 @@ The goal of this project is to harness Google Apps Scripts and an Image Generati
 
 ## Design Decisions
 - *Security:* Using Google Secrets Manager to store Nano Banana API key instead of pasting it directly in Apps Script. 
+
+## Setup
+- store Gemini API key in GCP Secrets Manager
+- store GCP project ID and upload drive folder ID in appscript properties

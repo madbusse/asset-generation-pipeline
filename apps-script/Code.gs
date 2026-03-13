@@ -1,10 +1,9 @@
 /**
- * Securely retrieves a secret from Google Cloud Secret Manager.
- * @param {string} secretName - The name of the secret in GCP.
- * @return {string} The raw API key value.
+ * Retrieves API Key from Google Cloud Secret Manager.
  */
-function getSecret(secretName) {
-  const projectId = "298835103165";
+function getSecret() {
+  const secretName = "NANO_BANANA_API_KEY";
+  const projectId = PropertiesService.getScriptProperties().getProperty('ASSET_PROJECT_ID');
   const version = "latest";
   const url = `https://secretmanager.googleapis.com/v1/projects/${projectId}/secrets/${secretName}/versions/${version}:access`;
   
@@ -31,21 +30,38 @@ function getSecret(secretName) {
  */
 function generateAssetVariations() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = sheet.getDataRange().getValues(); // Gets all rows
-  const NANO_BANANA_API_KEY = getSecret("NANO_BANANA_API_KEY");
+  const data = sheet.getDataRange().getValues();
+  const NANO_BANANA_API_KEY = getSecret();
   const NANO_BANANA_ENDPOINT= "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent"
 
   // Iterate through rows (skipping header)
-  for (let i = 1; i < data.length; i++) {
-    // let prompt = data[i][7]; // prompt in col H
-    let prompt = "make an image of a banana"
+  for (let i = 3; i < data.length; i++) {
+    let prompt = data[i][2]; // prompt in col C
+    console.log(prompt);
+
+    // getting image (col B has image link)
+    let imageURL = data[i][1]; 
+    console.log(imageURL);
+    const fileId = imageURL.match(/[-\w]{25,}/);
+    console.log(fileId);
+    const inputImageBlob = DriveApp.getFileById(fileId).getBlob();
+    const base64Image = Utilities.base64Encode(inputImageBlob.getBytes());
+    const mimeType = inputImageBlob.getContentType();
     
     const payload = {
       "contents": [{
-        "parts": [{ "text": prompt }]
+        "parts": [
+          { "text": prompt },
+          {
+            "inlineData": {
+              "mimeType": mimeType,
+              "data": base64Image
+            }
+          }
+        ]
       }],
       "generationConfig": {
-        "responseModalities": ["IMAGE"] 
+        "responseModalities": ["IMAGE"]
       }
     };
 
@@ -61,13 +77,13 @@ function generateAssetVariations() {
 
     // Extract the base64 image data from the response
     const base64Data = result.candidates[0].content.parts[0].inlineData.data;
-    const imageBlob = Utilities.newBlob(Utilities.base64Decode(base64Data), "image/png", `Variation_${i}.png`);
+    const responseImageBlob = Utilities.newBlob(Utilities.base64Decode(base64Data), "image/png", `Variation_${i}.png`);
     
     // Save to GDrive
-    let folder = DriveApp.getFolderById("Asset Generation Project/Assets");
-    let file = folder.createFile(imageBlob).setName("Variation_" + i);
+    let folder = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('ASSET_FOLDER_ID'));
+    let file = folder.createFile(responseImageBlob).setName("Variation_" + i);
     
     // Update Sheet with Link
-    sheet.getRange(i + 1, 9).setValue(file.getUrl()); // Column I
+    sheet.getRange(i + 1, 8).setValue(file.getUrl()); // col I
   }
 }
