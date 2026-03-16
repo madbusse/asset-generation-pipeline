@@ -22,3 +22,8 @@ The goal of this project is to harness Google Apps Scripts and an Image Generati
 ## Setup
 - store Gemini API key in GCP Secrets Manager
 - store GCP project ID and upload drive folder ID in appscript properties
+
+## Learnings & Amplifications
+- Slight learning curve with GCP (free account wasn't allowing API key access)
+- Would enable multiple assets to be generated in one call in the future
+- More context included in input to help create a more production-ready image
