@@ -2,7 +2,7 @@
 
 The goal of this project is to harness Google Apps Scripts and an Image Generation Model to create variations of an asset.
 
-## Implementation Plan
+## Implementation
 - Assets are stored in GDrive and linked in a [Sheet](https://docs.google.com/spreadsheets/d/1RP_GSfcMqos1uhpGtE4jpT2LiZzId6C4iMyINdZZyjY/edit?usp=sharing).
 - Apps script grabs image and sends it to Nano Banana to generate asset variations.
 - Apps script re-uploads assets to Sheet.
@@ -18,10 +18,13 @@ The goal of this project is to harness Google Apps Scripts and an Image Generati
 
 ## Design Decisions
 - *Security:* Using Google Secrets Manager to store Nano Banana API key instead of pasting it directly in Apps Script. 
+- *Customizability:* Users can choose how much context to include.
+- *Usability:* Tool is entirely within GSuite and enables easy use for non-technical users.
 
 ## Setup
-- store Gemini API key in GCP Secrets Manager
+- store Gemini API key in GCP Secrets Manager for security
 - store GCP project ID and upload drive folder ID in appscript properties
+- make sure to give access in appscript.json
 
 ## Learnings & Amplifications
 - Slight learning curve with GCP (free account wasn't allowing API key access)
