@@ -31,59 +31,64 @@ function getSecret() {
 function generateAssetVariations() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const data = sheet.getDataRange().getValues();
+  const approvedCol = 1; // col B
+  const inputLinkCol = 2; // col C
+  const inputPromptCol = 3; // col D
+  const ouputLinkCol = 8; // col I
   const NANO_BANANA_API_KEY = getSecret();
   const NANO_BANANA_ENDPOINT= "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent"
 
-  // Iterate through rows (skipping header)
+  // iterate through rows (skipping header rows)
   for (let i = 3; i < data.length; i++) {
-    let prompt = data[i][2]; // prompt in col C
-    console.log(prompt);
+    if (data[i][approvedCol] === true) {
+      let prompt = data[i][inputPromptCol]
 
-    // getting image (col B has image link)
-    let imageURL = data[i][1]; 
-    console.log(imageURL);
-    const fileId = imageURL.match(/[-\w]{25,}/);
-    console.log(fileId);
-    const inputImageBlob = DriveApp.getFileById(fileId).getBlob();
-    const base64Image = Utilities.base64Encode(inputImageBlob.getBytes());
-    const mimeType = inputImageBlob.getContentType();
-    
-    const payload = {
-      "contents": [{
-        "parts": [
-          { "text": prompt },
-          {
-            "inlineData": {
-              "mimeType": mimeType,
-              "data": base64Image
+      // getting image
+      let imageURL = data[i][inputLinkCol]; 
+      const fileId = imageURL.match(/[-\w]{25,}/);
+      const inputFileName = DriveApp.getFileById(fileId).getName().replace(/\.[^/.]+$/, "");
+      const inputImageBlob = DriveApp.getFileById(fileId).getBlob();
+      const base64Image = Utilities.base64Encode(inputImageBlob.getBytes());
+      const mimeType = inputImageBlob.getContentType();
+      
+      const payload = {
+        "contents": [{
+          "parts": [
+            { "text": prompt },
+            {
+              "inlineData": {
+                "mimeType": mimeType,
+                "data": base64Image
+              }
             }
-          }
-        ]
-      }],
-      "generationConfig": {
-        "responseModalities": ["IMAGE"]
-      }
-    };
+          ]
+        }],
+        "generationConfig": {
+          "responseModalities": ["IMAGE"]
+        }
+      };
 
-    const options = {
-      "method": "post",
-      "headers": { "x-goog-api-key": NANO_BANANA_API_KEY }, // Use this specific header for Gemini
-      "contentType": "application/json",
-      "payload": JSON.stringify(payload),
-    };
+      const options = {
+        "method": "post",
+        "headers": { "x-goog-api-key": NANO_BANANA_API_KEY },
+        "contentType": "application/json",
+        "payload": JSON.stringify(payload),
+      };
 
-    const response = UrlFetchApp.fetch(NANO_BANANA_ENDPOINT, options);
-    const result = JSON.parse(response.getContentText());
+      const response = UrlFetchApp.fetch(NANO_BANANA_ENDPOINT, options);
+      const result = JSON.parse(response.getContentText());
 
-    // Extract the base64 image data from the response
-    const base64Data = result.candidates[0].content.parts[0].inlineData.data;
-    const responseImageBlob = Utilities.newBlob(Utilities.base64Decode(base64Data), "image/png", `Variation_${i}.png`);
-    
-    // Save to GDrive
-    let folder = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('ASSET_FOLDER_ID'));
-    let file = folder.createFile(responseImageBlob).setName("Variation_" + i);
-    
-    // Update Sheet with Link
-    sheet.getRange(i + 1, 8).setValue(file.getUrl()); // col I
+      // extract the base64 image data from the response
+      const base64Data = result.candidates[0].content.parts[0].inlineData.data;
+      const responseImageBlob = Utilities.newBlob(Utilities.base64Decode(base64Data), "image/png", `Variation_${i}.png`);
+      
+      // save to drive
+      let folder = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('ASSET_FOLDER_ID'));
+      let newFolder = folder.createFolder(inputFileName + " Outputs");
+      let file = newFolder.createFile(responseImageBlob).setName("Variation_1");
+      
+      // update sheet with link
+      sheet.getRange(i + 1, ouputLinkCol + 1).setValue(file.getUrl());
+    }
   }
 }
